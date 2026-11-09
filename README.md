@@ -97,7 +97,7 @@ omarchy plugin validate ~/.config/omarchy/plugins/jordan.workspaces
 
 ## Version
 
-`manifest.json` is at 1.0.2. Notes for 1.0.0, 1.0.1, and 1.0.2 are in [CHANGELOG.md](CHANGELOG.md). This repository has no GitHub Release.
+`manifest.json` is at 1.0.3. Notes for 1.0.0 through 1.0.3 are in [CHANGELOG.md](CHANGELOG.md). This repository has no GitHub Release.
 
 ## License
 

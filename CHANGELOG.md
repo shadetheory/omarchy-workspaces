@@ -2,6 +2,10 @@
 
 Versions match `manifest.json`. This repository has no GitHub Release.
 
+## 1.0.3
+
+- Brackets follow the workspace each screen is showing on the pills already on the bar. The pill list changes when workspaces move between screens or the set of numbers changes.
+
 ## 1.0.2
 
 - Clicks send `hl.dsp.focus({ workspace = N })`. Omarchy evaluates Hyprland dispatch as Lua, and the previous `workspace N` string is a syntax error, so the click was dropped.

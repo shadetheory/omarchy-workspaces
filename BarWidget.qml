@@ -42,17 +42,15 @@ BarWidget {
   }
   readonly property var workspaceValues: Hyprland.workspaces.values
   readonly property var monitorValues: Hyprland.monitors.values
-  readonly property int focusedId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
-  readonly property var items: {
-    var sink = root.focusedId
-    var monitors = root.monitorValues
-    var cap = Math.min(monitors.length, root.maxMonitors)
-    for (var i = 0; i < cap; i++) {
-      var aw = monitors[i].activeWorkspace
-      if (aw) sink += aw.id
-    }
-    return root.buildItems()
-  }
+
+  // Pill membership only. Which number is showing is HyprlandWorkspace.active,
+  // read by the existing pills. A fresh array here would replace the Repeater
+  // model on every switch and the pills would walk that queue.
+  readonly property string structureKey: root.itemsKey(root.buildItems())
+  property var items: []
+
+  onStructureKeyChanged: Qt.callLater(root.publishItems)
+  Component.onCompleted: root.publishItems()
 
   function plain(value) {
     return String(value || "").replace(/[<>&]/g, "").replace(/[\x00-\x1F\x7F]/g, "").slice(0, root.maxTooltip)
@@ -69,6 +67,27 @@ BarWidget {
     // Closed set: a digit, a monitor letter, a separator, or a bracketed digit.
     if (!/^(?:[0-9A-H]|[LRT]|\||\[[0-9]\])$/.test(text)) return ""
     return text
+  }
+
+  function itemsKey(items) {
+    var parts = []
+    var cap = Math.min(items.length, root.maxItems)
+    for (var i = 0; i < cap; i++) {
+      var item = items[i]
+      if (!item) continue
+      if (item.kind === "sep") parts.push("|")
+      else if (item.kind === "label") parts.push("L:" + item.text + ":" + item.monitor)
+      else if (item.kind === "ws") parts.push("W:" + item.ws + ":" + item.monitor)
+    }
+    return parts.join("\n")
+  }
+
+  function publishItems() {
+    var next = root.buildItems()
+    var key = root.itemsKey(next)
+    if (key !== root.structureKey) return
+    if (key === root.itemsKey(root.items)) return
+    root.items = next
   }
 
   function workspaceById(id) {
@@ -158,8 +177,6 @@ BarWidget {
       var monName = root.connectorName(visible[i].name)
       var ids = idsByName[monName] || []
       var tag = root.monitorTag(i, visible)
-      var activeWs = visible[i].activeWorkspace
-      var activeId = activeWs ? activeWs.id : -1
       if (shown > 0) out.push({ kind: "sep" })
       if (tag !== "") out.push({ kind: "label", text: tag, monitor: monName })
       for (var n = 0; n < ids.length; n++) {
@@ -168,8 +185,7 @@ BarWidget {
           kind: "ws",
           ws: ids[n],
           monitor: monName,
-          tag: tag,
-          onScreen: ids[n] === activeId
+          tag: tag
         })
       }
       shown += 1
@@ -184,7 +200,7 @@ BarWidget {
     Hyprland.dispatch("hl.dsp.focus({ workspace = " + n + " })")
   }
 
-  function tooltipFor(item) {
+  function tooltipFor(item, onScreen) {
     if (!item) return ""
     var isThis = item.monitor && root.thisMonitorName !== "" && item.monitor === root.thisMonitorName
     if (item.kind === "label") {
@@ -195,8 +211,8 @@ BarWidget {
     var where = isThis ? "this screen" : root.monitorPhrase(item.tag)
     var conn = root.connectorName(item.monitor)
     if (conn !== "") where += " · " + conn
-    if (isThis && item.onScreen) where += " · you are here"
-    else if (item.onScreen) where += " · on that screen now"
+    if (isThis && onScreen) where += " · you are here"
+    else if (onScreen) where += " · on that screen now"
     return root.plain(where)
   }
 
@@ -225,7 +241,8 @@ BarWidget {
         readonly property int workspaceId: isWs ? Number(modelData.ws) : 0
         readonly property var workspace: isWs ? root.workspaceById(workspaceId) : null
         readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
-        readonly property bool onScreen: isWs && modelData.onScreen === true
+        // Live from the event stream: true when this monitor is showing this workspace.
+        readonly property bool onScreen: isWs && workspace !== null && workspace.active === true
         readonly property bool isThis: {
           var mon = modelData && modelData.monitor ? root.connectorName(modelData.monitor) : ""
           return mon !== "" && root.thisMonitorName !== "" && mon === root.thisMonitorName
@@ -239,12 +256,13 @@ BarWidget {
           if (onScreen) return root.pillText("[" + numberText + "]")
           return root.pillText(numberText)
         }
+        // Brackets already mark the workspace each screen is showing, including this one.
         active: false
         dimmed: isSep || (isLabel && !isThis)
         opacity: isSep ? 0.45 : (isLabel ? 1 : (occupied || onScreen ? 1 : 0.5))
         pressable: isWs
         interactive: isWs || isLabel
-        tooltipText: root.tooltipFor(modelData)
+        tooltipText: root.tooltipFor(modelData, onScreen)
         horizontalMargin: isSep ? 2 : 6
         verticalPadding: 6
         fixedWidth: root.vertical ? root.barSize : (isSep ? Style.space(10) : (onScreen ? Style.space(28) : Style.space(20)))

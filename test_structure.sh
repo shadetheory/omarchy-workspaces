@@ -26,7 +26,7 @@ def need(cond, message):
 
 need(manifest.get("schemaVersion") == 1 and isinstance(manifest.get("schemaVersion"), int), "schemaVersion")
 need(manifest.get("id") == "jordan.workspaces", "id")
-need(manifest.get("version") == "1.0.2", "version")
+need(manifest.get("version") == "1.0.3", "version")
 need(manifest.get("license") == "MIT", "license")
 need("bar-widget" in manifest.get("kinds", []), "kinds")
 entry = manifest.get("entryPoints", {}).get("barWidget")
@@ -53,6 +53,7 @@ grep -q -F 'preview.png' README.md || fail "README missing preview"
 grep -q -F '## Usage' README.md || fail "README missing Usage"
 grep -q -F '## Config' README.md || fail "README missing Config"
 grep -q -F '## Requirements' README.md || fail "README missing Requirements"
+grep -q -F '## 1.0.3' CHANGELOG.md || fail "CHANGELOG missing 1.0.3"
 grep -q -F '## 1.0.2' CHANGELOG.md || fail "CHANGELOG missing 1.0.2"
 grep -q -F '## 1.0.1' CHANGELOG.md || fail "CHANGELOG missing 1.0.1"
 grep -q -F '## 1.0.0' CHANGELOG.md || fail "CHANGELOG missing 1.0.0"
@@ -68,6 +69,30 @@ fi
 grep -q -F 'function pillText' BarWidget.qml || fail "pillText missing"
 grep -q -F 'monitors.length <= 1' BarWidget.qml || fail "single-monitor tag"
 grep -q -F 'ABCDEFGH' BarWidget.qml || fail "letter tags"
+grep -q -F 'workspace.active === true' BarWidget.qml || fail "live shown-workspace binding"
+grep -q -F 'Qt.callLater(root.publishItems)' BarWidget.qml || fail "deferred pill list publish"
+grep -q -F 'active: false' BarWidget.qml || fail "button active color"
+if grep -q -E 'Hyprland\.refresh|focusedWorkspace|activeWorkspace' BarWidget.qml; then
+  fail "switch path waits on a monitor query or global focus"
+fi
+if grep -q -F 'return root.buildItems()' BarWidget.qml; then
+  fail "pill list binding returns a fresh model"
+fi
+
+python3 - << 'PY' || fail "shown workspace stays off the pill list"
+import pathlib
+import sys
+
+text = pathlib.Path("BarWidget.qml").read_text()
+start = text.find("function buildItems()")
+end = text.find("function focusWorkspace", start)
+if start < 0 or end < 0:
+    sys.exit("buildItems")
+body = text[start:end]
+for needle in ("activeWorkspace", "onScreen", ".active", "focusedWorkspace"):
+    if needle in body:
+        sys.exit(f"buildItems reads {needle}")
+PY
 
 python3 - << 'PY' || fail "tree"
 import pathlib
