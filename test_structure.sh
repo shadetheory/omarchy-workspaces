@@ -46,7 +46,7 @@ if errors:
 PY
 
 grep -q -F 'omarchy plugin remove jordan.workspaces' README.md || fail "README missing remove command"
-grep -q -F 'omarchy plugin add https://github.com/jordanpartridge/omarchy-workspaces.git' README.md || fail "README missing add URL"
+grep -q -F 'omarchy plugin add https://github.com/shadetheory/omarchy-workspaces.git' README.md || fail "README missing add URL"
 grep -q -F 'omarchy plugin disable omarchy.workspaces' README.md || fail "README missing disable command"
 grep -q -F 'omarchy plugin enable jordan.workspaces' README.md || fail "README missing enable command"
 grep -q -F 'preview.png' README.md || fail "README missing preview"
