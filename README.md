@@ -31,7 +31,7 @@ Hover a label or a number for the screen name and, when the shell knows it, the 
 From a machine that already has Omarchy:
 
 ```bash
-omarchy plugin add https://github.com/jordanpartridge/omarchy-workspaces.git
+omarchy plugin add https://github.com/shadetheory/omarchy-workspaces.git
 omarchy plugin enable jordan.workspaces
 ```
 

@@ -5,7 +5,7 @@
   "version": "1.0.3",
   "author": "Jordan Partridge",
   "license": "MIT",
-  "homepage": "https://github.com/jordanpartridge/omarchy-workspaces",
+  "homepage": "https://github.com/shadetheory/omarchy-workspaces",
   "description": "Workspace numbers grouped by monitor. Brackets mark the workspace that screen is showing.",
   "kinds": [
     "bar-widget"
